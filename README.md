@@ -5,7 +5,7 @@ This project is a full-stack hospital management system using React for the fron
 ## Structure
 
 - `frontend/` — React + Vite application for public website, login, and dashboard.
-- `backend/` — PHP REST API endpoints.
+- `backend/` — PHP REST API endpoints. (HICT/2022/39)
 - `db.sql` — MySQL schema and initial table definitions.
 
 ## Setup
