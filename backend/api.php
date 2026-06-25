@@ -167,6 +167,7 @@ try {
             if (empty($input['doctor_id'])) {
                 respond(['error' => 'Missing doctor_id'], 400);
             }
+            
 
             $stmt = $db->prepare('SELECT user_id FROM doctors WHERE doctor_id = ?');
             $stmt->execute([$input['doctor_id']]);
