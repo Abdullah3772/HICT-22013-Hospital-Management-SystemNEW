@@ -1596,6 +1596,7 @@ export function AnnouncementsManager() {
   }, []);
 
   return (
+    
     <Box>
       <SectionCard title="Announcements">
         <Stack spacing={2}>
