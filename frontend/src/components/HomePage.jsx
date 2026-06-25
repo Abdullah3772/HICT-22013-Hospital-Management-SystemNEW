@@ -27,7 +27,7 @@ import {
 import Footer from './Footer';
 
 const themeColors = {
-  primary: '#0f4c81',     // deep hospital blue
+  primary: '#10528dff',     // deep hospital blue
   secondary: '#14b8a6',   // medical teal
   accent: '#2563eb',
   danger: '#ef4444',
