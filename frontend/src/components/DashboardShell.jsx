@@ -16,7 +16,8 @@ import {
   PatientDashboard,
   AnnouncementsManager,
   DashboardSummary,
-} from './Modules';
+} 
+from './Modules';
 
 const moduleMap = {
   dashboardHome: { label: 'Dashboard Home', component: DashboardSummary },
