@@ -9,7 +9,6 @@ import {
   TextField,
   Typography,
   Divider,
-  Chip,
 } from '@mui/material';
 
 
@@ -89,18 +88,8 @@ function LoginPage({ loginType, onLogin, onBack }) {
 
                 <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)' }} />
 
-                <Typography variant="subtitle2" sx={{ opacity: 0.8 }}>
-                  Sample Accounts (Testing Only)
-                </Typography>
-
-                <Stack spacing={1}>
-                  <Chip label="Admin: admin / admin123" sx={{ bgcolor: '#1e5fa3', color: '#fff' }} />
-                  <Chip label="Doctor: drsaman / doctor123" sx={{ bgcolor: '#1e5fa3', color: '#fff' }} />
-                  <Chip label="Patient: ID 1 / NIC 973456789V" sx={{ bgcolor: '#1e5fa3', color: '#fff' }} />
-                </Stack>
-
                 <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                  Secure authentication • ISHIS Hospital System
+                  Secure authentication &bull; ISHIS Hospital System
                 </Typography>
               </Stack>
             </Paper>

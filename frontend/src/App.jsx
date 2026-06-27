@@ -5,7 +5,7 @@ import HomePage from './components/HomePage';
 import LoginPage from './components/LoginPage';
 import DashboardShell from './components/DashboardShell';
 
-const API_BASE = 'http://localhost/HICT-22013-Hospital-Management-System/backend/api.php';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost/HICT-22013-Hospital-Management-System/backend/api.php';
 
 const theme = createTheme({
   palette: {
@@ -35,11 +35,23 @@ function App() {
   const handleLogin = async (payload) => {
     try {
       const response = await axios.post(`${API_BASE}?action=login`, payload);
-      setUser(response.data.user);
+      const { user: userData, token } = response.data;
+      setUser(userData);
+
+      if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+
       setCurrentPage('dashboard');
     } catch (error) {
       alert(error.response?.data?.error || 'Login failed');
     }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    delete axios.defaults.headers.common['Authorization'];
+    setCurrentPage('home');
   };
 
   const handleNavigate = (page, type = 'admin') => {
@@ -63,7 +75,7 @@ function App() {
             <LoginPage loginType={loginType} onLogin={handleLogin} onBack={() => setCurrentPage('home')} />
           )}
           {currentPage === 'dashboard' && user && (
-            <DashboardShell user={user} stats={stats} announcements={announcements} onLogout={() => { setUser(null); setCurrentPage('home'); }} />
+            <DashboardShell user={user} stats={stats} announcements={announcements} onLogout={handleLogout} />
           )}
         </Container>
       </Box>
