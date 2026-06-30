@@ -2,13 +2,68 @@
 require_once __DIR__ . '/config.php';
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
+
+// --- Security headers ---
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('X-XSS-Protection: 1; mode=block');
+
+// --- Restricted CORS ---
+$allowedOrigins = array_map('trim', explode(',', CORS_ALLOWED_ORIGINS));
+$requestOrigin  = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($requestOrigin, $allowedOrigins, true)) {
+    header('Access-Control-Allow-Origin: ' . $requestOrigin);
+    header('Vary: Origin');
+} else {
+    header('Access-Control-Allow-Origin: ' . $allowedOrigins[0]);
+    header('Vary: Origin');
+}
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
+}
+
+// ---- Lightweight HMAC-based token helpers ----
+function generateAuthToken(array $payload): string {
+    $payload['iat'] = time();
+    $payload['exp'] = time() + 28800; // 8 hours
+    $data = base64_encode(json_encode($payload));
+    $sig  = hash_hmac('sha256', $data, AUTH_SECRET);
+    return $data . '.' . $sig;
+}
+
+function verifyAuthToken(string $token): ?array {
+    $parts = explode('.', $token, 2);
+    if (count($parts) !== 2) return null;
+    [$data, $sig] = $parts;
+    if (!hash_equals(hash_hmac('sha256', $data, AUTH_SECRET), $sig)) return null;
+    $payload = json_decode(base64_decode($data), true);
+    if (!$payload || ($payload['exp'] ?? 0) < time()) return null;
+    return $payload;
+}
+
+function requireAuth(): array {
+    $header = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if (preg_match('/^Bearer\s+(\S+)$/', $header, $m)) {
+        $payload = verifyAuthToken($m[1]);
+        if ($payload) return $payload;
+    }
+    respond(['error' => 'Authentication required'], 401);
+    exit;
+}
+
+function requireRole(array $allowed): array {
+    $user = requireAuth();
+    if (!in_array($user['role'] ?? '', $allowed, true)) {
+        respond(['error' => 'Insufficient permissions'], 403);
+        exit;
+    }
+    return $user;
 }
 
 function connect() {
@@ -61,13 +116,18 @@ try {
                 if (!$patient) {
                     respond(['error' => 'Invalid patient credentials'], 401);
                 }
-                respond(['user' => [
+                $patientUser = [
                     'role_name' => 'Patient',
                     'full_name' => $patient['full_name'],
                     'patient_id' => $patient['patient_id'],
                     'email' => $patient['email'],
                     'phone' => $patient['contact_number'],
-                ]]);
+                ];
+                $token = generateAuthToken([
+                    'patient_id' => $patient['patient_id'],
+                    'role'       => 'Patient',
+                ]);
+                respond(['user' => $patientUser, 'token' => $token]);
             }
             $username = $input['username'] ?? '';
             $password = $input['password'] ?? '';
@@ -86,7 +146,12 @@ try {
                 $stmt->execute([$user['user_id']]);
                 $user['doctor_id'] = $stmt->fetchColumn() ?: null;
             }
-            respond(['user' => $user]);
+            $token = generateAuthToken([
+                'user_id'   => $user['user_id'],
+                'role'      => $user['role_name'],
+                'doctor_id' => $user['doctor_id'] ?? null,
+            ]);
+            respond(['user' => $user, 'token' => $token]);
             break;
 
         case 'announcements':
@@ -95,6 +160,7 @@ try {
             break;
 
         case 'addAnnouncement':
+            requireRole(['Super Admin', 'Hospital Admin']);
             if ($method !== 'POST') respond(['error' => 'Announcement requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $title = $input['title'] ?? '';
@@ -110,6 +176,7 @@ try {
             break;
 
         case 'deleteAnnouncement':
+            requireRole(['Super Admin', 'Hospital Admin']);
             if ($method !== 'POST') respond(['error' => 'Announcement delete requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $announcementId = isset($input['announcement_id']) ? (int)$input['announcement_id'] : 0;
@@ -132,11 +199,13 @@ try {
             break;
 
         case 'listDoctors':
+            requireAuth();
             $stmt = $db->query('SELECT d.doctor_id, u.username, u.full_name, d.nic, d.gender, d.specialization, d.department, d.contact_number, d.qualifications, d.medical_registration_number, u.email FROM doctors d JOIN users u ON d.user_id = u.user_id ORDER BY u.full_name');
             respond(['doctors' => $stmt->fetchAll()]);
             break;
 
         case 'createDoctor':
+            requireRole(['Super Admin', 'Hospital Admin']);
             if ($method !== 'POST') respond(['error' => 'Doctor creation requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $required = ['username','password','full_name','nic'];
@@ -162,6 +231,7 @@ try {
             break;
 
         case 'updateDoctor':
+            requireRole(['Super Admin', 'Hospital Admin']);
             if ($method !== 'POST') respond(['error' => 'Doctor update requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             if (empty($input['doctor_id'])) {
@@ -248,11 +318,13 @@ try {
             break;
 
         case 'listPatients':
+            requireAuth();
             $stmt = $db->query('SELECT patient_id, full_name, nic, dob, age, gender, contact_number, email, emergency_contact_person, emergency_contact_number, blood_group, allergies, existing_diseases FROM patients ORDER BY created_at DESC LIMIT 100');
             respond(['patients' => $stmt->fetchAll()]);
             break;
 
         case 'nextPatientId':
+            requireAuth();
             if ($method !== 'GET') respond(['error' => 'Next patient ID lookup requires GET'], 405);
             $stmt = $db->query('SELECT IFNULL(MAX(patient_id), 0) + 1 AS next_id FROM patients');
             $nextPatientId = $stmt->fetchColumn();
@@ -260,6 +332,7 @@ try {
             break;
 
         case 'checkPatientDuplicate':
+            requireAuth();
             if ($method !== 'GET') respond(['error' => 'Duplicate check requires GET'], 405);
             $nic = $_GET['nic'] ?? null;
             $contact = $_GET['contact_number'] ?? null;
@@ -278,6 +351,7 @@ try {
             break;
 
         case 'registerPatient':
+            requireAuth();
             if ($method !== 'POST') respond(['error' => 'Patient registration requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $fields = [
@@ -310,6 +384,7 @@ try {
             break;
 
         case 'patientById':
+            requireAuth();
             if ($method !== 'GET') respond(['error' => 'Patient lookup requires GET'], 405);
             $patientId = $_GET['patient_id'] ?? null;
             if (!$patientId) respond(['error' => 'Missing patient_id'], 400);
@@ -321,6 +396,7 @@ try {
             break;
 
         case 'patientByNIC':
+            requireAuth();
             if ($method !== 'GET') respond(['error' => 'Patient lookup requires GET'], 405);
             $nic = $_GET['nic'] ?? null;
             if (!$nic) respond(['error' => 'Missing nic'], 400);
@@ -332,6 +408,7 @@ try {
             break;
 
         case 'patientByContact':
+            requireAuth();
             if ($method !== 'GET') respond(['error' => 'Patient lookup requires GET'], 405);
             $contact = $_GET['contact_number'] ?? null;
             if (!$contact) respond(['error' => 'Missing contact_number'], 400);
@@ -343,6 +420,7 @@ try {
             break;
 
         case 'patientHistory':
+            requireAuth();
             if ($method !== 'GET') respond(['error' => 'Patient history requires GET'], 405);
             $patientId = $_GET['patient_id'] ?? null;
             if (!$patientId) respond(['error' => 'Missing patient_id'], 400);
@@ -375,6 +453,7 @@ try {
             break;
 
         case 'opdConsultation':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor']);
             if ($method !== 'POST') respond(['error' => 'OPD consultation requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $required = ['patient_id','doctor_id'];
@@ -411,6 +490,7 @@ try {
             break;
 
         case 'wardAdmission':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Nurse']);
             if ($method !== 'POST') respond(['error' => 'Ward admission requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('INSERT INTO ward_admissions (ward_number, patient_id, doctor_id, diagnosis, admission_date, discharge_date, discharge_summary, follow_up_instructions, clinic_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -429,6 +509,7 @@ try {
             break;
 
         case 'wardNotes':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Nurse']);
             if ($method !== 'POST') respond(['error' => 'Ward note requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('INSERT INTO ward_notes (admission_id, author_id, note_type, note_text) VALUES (?, ?, ?, ?)');
@@ -442,6 +523,7 @@ try {
             break;
 
         case 'icuRecord':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Nurse']);
             if ($method !== 'POST') respond(['error' => 'ICU record requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('INSERT INTO icu_records (patient_id, doctor_id, blood_pressure, heart_rate, oxygen_saturation, temperature, respiratory_rate, ventilator_status, medications, procedures, doctor_notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -462,6 +544,7 @@ try {
             break;
 
         case 'otSurgery':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor']);
             if ($method !== 'POST') respond(['error' => 'OT scheduling requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('INSERT INTO ot_surgeries (patient_id, surgeon_id, anesthetist_name, surgery_date, surgery_type, ot_room_number, outcome, recovery_notes, complications, recommendations, follow_up_instructions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -482,6 +565,7 @@ try {
             break;
 
         case 'labRequest':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Laboratory Staff']);
             if ($method !== 'POST') respond(['error' => 'Lab request requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('INSERT INTO lab_tests (patient_id, requested_by, test_type, sample_type, status) VALUES (?, ?, ?, ?, ?)');
@@ -496,6 +580,7 @@ try {
             break;
 
         case 'labReport':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Laboratory Staff']);
             if ($method !== 'POST') respond(['error' => 'Lab report update requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('UPDATE lab_tests SET result = ?, status = ?, result_date = ? WHERE lab_test_id = ?');
@@ -509,6 +594,7 @@ try {
             break;
 
         case 'radiologyRequest':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Radiology Staff']);
             if ($method !== 'POST') respond(['error' => 'Radiology request requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('INSERT INTO radiology_tests (patient_id, requested_by, imaging_type, status) VALUES (?, ?, ?, ?)');
@@ -522,6 +608,7 @@ try {
             break;
 
         case 'radiologyReport':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Radiology Staff']);
             if ($method !== 'POST') respond(['error' => 'Radiology report update requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('UPDATE radiology_tests SET findings = ?, notes = ?, status = ?, result_date = ?, report_file = ? WHERE radiology_test_id = ?');
@@ -537,11 +624,13 @@ try {
             break;
 
         case 'medicines':
+            requireAuth();
             $stmt = $db->query('SELECT * FROM medicines ORDER BY name');
             respond(['medicines' => $stmt->fetchAll()]);
             break;
 
         case 'addMedicine':
+            requireRole(['Super Admin', 'Hospital Admin', 'Pharmacist']);
             if ($method !== 'POST') respond(['error' => 'Medicine creation requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('INSERT INTO medicines (name, stock, expiry_date, low_stock_threshold) VALUES (?, ?, ?, ?)');
@@ -555,6 +644,7 @@ try {
             break;
 
         case 'pharmacyDispense':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Pharmacist']);
             if ($method !== 'POST') respond(['error' => 'Pharmacy dispense requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('INSERT INTO pharmacy_dispenses (patient_id, prescribed_by, medicine_id, dosage, quantity, duration, instructions) VALUES (?, ?, ?, ?, ?, ?, ?)');
@@ -575,6 +665,7 @@ try {
             break;
 
         case 'maternityRecord':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Nurse']);
             if ($method !== 'POST') respond(['error' => 'Maternity record requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $stmt = $db->prepare('INSERT INTO maternity_records (patient_id, mother_patient_id, gestation_weeks, expected_delivery_date, risk_level, delivery_date, delivery_type, baby_name, baby_gender, birth_weight, apgar_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
@@ -595,6 +686,7 @@ try {
             break;
 
         case 'emergencyCase':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor', 'Nurse', 'Receptionist']);
             if ($method !== 'POST') respond(['error' => 'Emergency case requires POST'], 405);
             $input = json_decode(file_get_contents('php://input'), true);
             $caseId = 'EMG-' . strtoupper(substr(md5(uniqid('', true)), 0, 8));
@@ -613,6 +705,7 @@ try {
             break;
 
         case 'doctorDashboard':
+            requireRole(['Super Admin', 'Hospital Admin', 'Doctor']);
             $doctorId = $_GET['doctor_id'] ?? null;
             if (!$doctorId) respond(['error' => 'Missing doctor_id'], 400);
             $response = [];
@@ -626,6 +719,7 @@ try {
             break;
 
         case 'patientDashboard':
+            requireAuth();
             $patientId = $_GET['patient_id'] ?? null;
             if (!$patientId) respond(['error' => 'Missing patient_id'], 400);
             $response = [];
@@ -651,7 +745,9 @@ try {
             respond(['error' => 'Action not found or not supported'], 404);
     }
 } catch (PDOException $ex) {
-    respond(['error' => 'Database error', 'details' => $ex->getMessage()], 500);
+    error_log('ISHIS DB error: ' . $ex->getMessage());
+    respond(['error' => 'A database error occurred. Please try again later.'], 500);
 } catch (Exception $ex) {
-    respond(['error' => $ex->getMessage()], 500);
+    error_log('ISHIS error: ' . $ex->getMessage());
+    respond(['error' => 'An unexpected error occurred.'], 500);
 }

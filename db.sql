@@ -294,10 +294,9 @@ INSERT INTO roles (role_name) VALUES
 ('Receptionist'),
 ('Patient');
 
--- Sample user accounts for quick login testing
--- Admin: admin / admin123
--- Doctor: drsaman / doctor123
--- Patient: patient1 / patient123
+-- Sample seed data — passwords MUST be changed after first login.
+-- Use `php backend/install.php` to create the admin with a strong password.
+-- The hashes below are placeholders for development only.
 INSERT INTO users (user_id, username, password_hash, role_id, full_name, email, phone) VALUES
 (1, 'admin', '$2y$10$6bF6aBpH.BZA723Pdq2DK.at9QbA/VkIdxs/legJMmiW6yqYBegyu', 1, 'Super Admin', 'admin@nationalhospital.lk', '0112345678'),
 (2, 'drsaman', '$2y$10$EtRlImaRj0Hr/SvIIRDj/O0ktRPh00VyKhn4mTEPab8s4hCdsKk8e', 3, 'Dr. Saman Perera', 'saman.perera@nationalhospital.lk', '+94 77 123 4567'),
