@@ -21,6 +21,7 @@ const themeColors = {
   panelBg: 'linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(236, 72, 153, 0.16))',
 };
 
+
 function LoginPage({ loginType, onLogin, onBack }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
