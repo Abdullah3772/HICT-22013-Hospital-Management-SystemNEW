@@ -4,7 +4,12 @@ import { Box, Container, Grid, Paper, Stack, Typography, Link } from '@mui/mater
 function Footer() {
   return (
     <Box component="footer" sx={{ mt: 6 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: 4, backgroundColor: 'primary.main', color: 'common.white' }}>
+      <Paper elevation={3} sx={{
+        p: 4,
+        borderRadius: 4,
+        backgroundImage: 'linear-gradient(90deg, #2563eb 0%, #ec4899 100%)',
+        color: 'common.white',
+      }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
             <Grid item xs={12} sm={6} md={3}>
@@ -19,9 +24,9 @@ function Footer() {
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Quick Links</Typography>
               <Stack spacing={0.5}>
-                <Link href="#" color="inherit" underline="hover">Admin Login</Link>
-                <Link href="#" color="inherit" underline="hover">Doctor Login</Link>
-                <Link href="#" color="inherit" underline="hover">Patient Login</Link>
+                <Link href="#" color="common.white" underline="hover">Admin Login</Link>
+                <Link href="#" color="common.white" underline="hover">Doctor Login</Link>
+                <Link href="#" color="common.white" underline="hover">Patient Login</Link>
               </Stack>
             </Grid>
             <Grid item xs={12} sm={6} md={3}>

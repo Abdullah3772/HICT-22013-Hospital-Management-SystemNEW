@@ -15,9 +15,10 @@ import {
 import { ShieldCheck, User, Lock } from 'lucide-react';
 
 const themeColors = {
-  primary: '#0f4c81',
-  secondary: '#14b8a6',
-  bg: '#f4f7fb',
+  primary: '#2563eb',
+  secondary: '#ec4899',
+  bg: '#eef4ff',
+  panelBg: 'linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(236, 72, 153, 0.16))',
 };
 
 function LoginPage({ loginType, onLogin, onBack }) {
@@ -50,6 +51,23 @@ function LoginPage({ loginType, onLogin, onBack }) {
       ? 'Manage patients, OPD, and clinical workflows'
       : 'Hospital system administration and control access';
 
+  const sampleCredentials = {
+    admin: {
+      label: 'Admin demo credentials',
+      lines: ['Username: admin', 'Password: admin123'],
+    },
+    doctor: {
+      label: 'Doctor demo credentials',
+      lines: ['Username: drsaman', 'Password: doctor123'],
+    },
+    patient: {
+      label: 'Patient demo credentials',
+      lines: ['Patient ID: 1', 'NIC: patient123'],
+    },
+  };
+
+  const sampleInfo = sampleCredentials[loginType] || sampleCredentials.admin;
+
   return (
     <Box
       sx={{
@@ -58,6 +76,7 @@ function LoginPage({ loginType, onLogin, onBack }) {
         display: 'flex',
         alignItems: 'center',
         py: 6,
+        backgroundImage: 'radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 32%), radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.12), transparent 28%)',
       }}
     >
       <Container maxWidth="md">
@@ -71,8 +90,9 @@ function LoginPage({ loginType, onLogin, onBack }) {
                 p: 4,
                 borderRadius: 4,
                 height: '100%',
-                bgcolor: themeColors.primary,
-                color: '#fff',
+                bgcolor: themeColors.panelBg,
+                color: '#0f172a',
+                boxShadow: '0 24px 60px rgba(37, 99, 235, 0.08)',
               }}
             >
               <Stack spacing={2}>
@@ -177,12 +197,23 @@ function LoginPage({ loginType, onLogin, onBack }) {
                       fontWeight: 700,
                       py: 1.2,
                       '&:hover': {
-                        bgcolor: '#0ea5a0',
+                        bgcolor: '#db2777',
                       },
                     }}
                   >
                     Login Securely
                   </Button>
+
+                  <Paper sx={{ p: 2, borderRadius: 3, bgcolor: '#f8fafc' }}>
+                    <Typography variant="subtitle2" fontWeight={700} mb={1}>
+                      {sampleInfo.label}
+                    </Typography>
+                    {sampleInfo.lines.map((line) => (
+                      <Typography key={line} variant="body2" color="text.secondary">
+                        {line}
+                      </Typography>
+                    ))}
+                  </Paper>
 
                   <Button
                     variant="outlined"

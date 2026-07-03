@@ -9,14 +9,24 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost/HICT-220
 
 const theme = createTheme({
   palette: {
-    primary: { main: '#1e4eb8', contrastText: '#ffffff' },
-    secondary: { main: '#00acc1', contrastText: '#ffffff' },
-    background: { default: '#f3f6fb', paper: '#ffffff' },
-    text: { primary: '#0f1f38', secondary: '#4b5d78' },
+    primary: { main: '#2563eb', contrastText: '#ffffff' },
+    secondary: { main: '#ec4899', contrastText: '#ffffff' },
+    info: { main: '#7c3aed', contrastText: '#ffffff' },
+    success: { main: '#22c55e', contrastText: '#ffffff' },
+    warning: { main: '#f59e0b', contrastText: '#ffffff' },
+    background: { default: '#eef4ff', paper: '#ffffff' },
+    text: { primary: '#102a43', secondary: '#475569' },
   },
   shape: { borderRadius: 24 },
   typography: {
     fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  },
+  components: {
+    MuiButton: {
+      defaultProps: {
+        disableElevation: true,
+      },
+    },
   },
 });
 

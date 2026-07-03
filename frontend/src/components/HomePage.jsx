@@ -27,12 +27,13 @@ import {
 import Footer from './Footer';
 
 const themeColors = {
-  primary: '#10528dff',     // deep hospital blue
-  secondary: '#14b8a6',   // medical teal
-  accent: '#2563eb',
+  primary: '#2563eb',
+  secondary: '#ec4899',
+  accent: '#7c3aed',
   danger: '#ef4444',
-  lightBg: '#f4f7fb',
+  lightBg: '#eef4ff',
   cardBg: '#ffffff',
+  heroBg: 'linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(236, 72, 153, 0.10))',
 };
 
 const emergencyContacts = [
@@ -97,7 +98,7 @@ function HomePage({ onOpenLogin, announcements = [], stats = {} }) {
       <Container maxWidth="lg">
 
         {/* HEADER */}
-        <Paper elevation={3} sx={{ p: 4, borderRadius: 4, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4, borderRadius: 4, mb: 4, backgroundImage: themeColors.heroBg, border: '1px solid rgba(37, 99, 235, 0.14)', backgroundColor: '#f1f7ff', boxShadow: '0 32px 80px rgba(37, 99, 235, 0.08)' }}>
           <Grid container spacing={4}>
             <Grid item xs={12} md={7}>
               <Stack spacing={2}>
@@ -118,14 +119,14 @@ function HomePage({ onOpenLogin, announcements = [], stats = {} }) {
 
             <Grid item xs={12} md={5}>
               <Stack spacing={2}>
-                <Paper sx={{ p: 3, borderRadius: 3 }}>
+                <Paper sx={{ p: 3, borderRadius: 3, bgcolor: '#eff6ff', boxShadow: '0 18px 40px rgba(37, 99, 235, 0.10)' }}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <MapPin size={18} />
                     <Typography fontWeight={600}>Colombo 08, Sri Lanka</Typography>
                   </Stack>
                 </Paper>
 
-                <Paper sx={{ p: 3, borderRadius: 3 }}>
+                <Paper sx={{ p: 3, borderRadius: 3, bgcolor: '#fff0f6', boxShadow: '0 18px 40px rgba(236, 72, 153, 0.10)' }}>
                   <Typography variant="body2" color="text.secondary">
                     Emergency Hotline
                   </Typography>
@@ -143,7 +144,7 @@ function HomePage({ onOpenLogin, announcements = [], stats = {} }) {
                   <Button
                     fullWidth
                     variant="contained"
-                    sx={{ bgcolor: themeColors.secondary }}
+                    sx={{ bgcolor: themeColors.secondary, '&:hover': { bgcolor: '#db2777' }, boxShadow: '0 14px 30px rgba(236, 72, 153, 0.24)' }}
                     onClick={() => onOpenLogin('login', 'patient')}
                   >
                     Patient Portal
@@ -152,7 +153,7 @@ function HomePage({ onOpenLogin, announcements = [], stats = {} }) {
                   <Button
                     fullWidth
                     variant="contained"
-                    sx={{ bgcolor: themeColors.primary }}
+                    sx={{ bgcolor: themeColors.primary, '&:hover': { bgcolor: '#1d4ed8' } }}
                     onClick={() => onOpenLogin('login', 'admin')}
                   >
                     Admin Access
@@ -169,7 +170,7 @@ function HomePage({ onOpenLogin, announcements = [], stats = {} }) {
             const Icon = item.icon;
             return (
               <Grid key={item.type} item xs={12} md={4}>
-                <Card sx={{ borderRadius: 4, height: '100%' }}>
+                <Card sx={{ borderRadius: 4, height: '100%', backgroundColor: '#f8fcff', boxShadow: '0 24px 48px rgba(37, 99, 235, 0.08)', transition: 'transform 0.25s ease, box-shadow 0.25s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 32px 64px rgba(37, 99, 235, 0.12)' } }}>
                   <CardContent>
                     <Stack spacing={2}>
                       <Box
@@ -199,7 +200,12 @@ function HomePage({ onOpenLogin, announcements = [], stats = {} }) {
                       </Typography>
 
                       <Button
-                        variant="outlined"
+                        variant="contained"
+                        sx={{
+                          bgcolor: item.type === 'patient' ? themeColors.secondary : themeColors.primary,
+                          color: '#fff',
+                          '&:hover': { bgcolor: item.type === 'patient' ? '#db2777' : '#1d4ed8' },
+                        }}
                         onClick={() => onOpenLogin('login', item.type)}
                       >
                         Open Portal
@@ -229,7 +235,7 @@ function HomePage({ onOpenLogin, announcements = [], stats = {} }) {
               ['ICU %', normalizedStats.icuOccupancyRate + '%'],
             ].map(([label, value]) => (
               <Grid item xs={12} sm={6} md={4} key={label}>
-                <Paper sx={{ p: 3, borderRadius: 3 }}>
+                <Paper sx={{ p: 3, borderRadius: 3, bgcolor: '#f8fbff', boxShadow: '0 12px 30px rgba(37, 99, 235, 0.08)' }}>
                   <Typography color="text.secondary">{label}</Typography>
                   <Typography fontSize={28} fontWeight={800}>
                     {value}
@@ -243,7 +249,7 @@ function HomePage({ onOpenLogin, announcements = [], stats = {} }) {
         {/* EMERGENCY + ANNOUNCEMENTS */}
         <Grid container spacing={3} mt={3}>
           <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 4, borderRadius: 4 }}>
+            <Paper sx={{ p: 4, borderRadius: 4, bgcolor: '#ffffff', boxShadow: '0 24px 55px rgba(15, 23, 42, 0.05)' }}>
               <Typography fontWeight={700} mb={2}>
                 Emergency Contacts
               </Typography>

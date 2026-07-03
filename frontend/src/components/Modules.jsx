@@ -1526,6 +1526,7 @@ export function PatientDashboard({ user }) {
     { title: 'Lab Reports', items: summary.lab_reports, renderKey: 'lab_test_id', render: (item) => `${item.test_type} • ${item.status}` },
     { title: 'Radiology Reports', items: summary.radiology_reports, renderKey: 'radiology_test_id', render: (item) => `${item.imaging_type} • ${item.status}` },
   ];
+  
 
   return (
     <Box>
