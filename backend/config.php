@@ -3,6 +3,7 @@
 // Database configuration for ISHIS backend 
 // Values are loaded from environment variables with safe defaults for local dev.
 
+
 define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
 define('DB_NAME', getenv('DB_NAME') ?: 'ishis');
 define('DB_USER', getenv('DB_USER') ?: 'root');

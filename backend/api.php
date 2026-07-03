@@ -3,6 +3,7 @@ require_once __DIR__ . '/config.php';
 
 header('Content-Type: application/json');
 
+
 // --- Security headers ---
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');

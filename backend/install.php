@@ -8,6 +8,7 @@
  *   3. Password is read from the ADMIN_PASSWORD env var (or prompted interactively).
  */
 
+
 if (php_sapi_name() !== 'cli') {
     http_response_code(403);
     echo 'This script must be run from the command line.';
