@@ -19,6 +19,7 @@ import {
 } 
 from './Modules';
 
+
 const moduleMap = {
   dashboardHome: { label: 'Dashboard Home', component: DashboardSummary },
   doctorManagement: { label: 'Doctor Management', component: DoctorManagement },
