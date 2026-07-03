@@ -10,6 +10,7 @@ function Footer() {
         backgroundImage: 'linear-gradient(90deg, #2563eb 0%, #ec4899 100%)',
         color: 'common.white',
       }}>
+        
         <Container maxWidth="lg">
           <Grid container spacing={4}>
             <Grid item xs={12} sm={6} md={3}>
