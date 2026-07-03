@@ -66,6 +66,7 @@ function requireRole(array $allowed): array {
     return $user;
 }
 
+
 function connect() {
     $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
     $options = [
